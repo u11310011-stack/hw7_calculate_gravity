@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gravity Anomaly Python 程式 — HTML 檔案</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial; line-height:1.6; padding:24px; background:#f7fafc; color:#0f172a }
+    header { margin-bottom:18px }
+    h1 { font-size:20px; margin:0 0 6px }
+    p.lead { margin:0 0 12px; color:#334155 }
+    .card { background:white; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-bottom:16px }
+    pre { background:#0b1220; color:#e6eef8; padding:12px; border-radius:8px; overflow:auto }
+    code { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Noto Mono", monospace }
+    .btn { display:inline-block; padding:8px 12px; border-radius:8px; background:#0ea5a4; color:white; text-decoration:none; cursor:pointer }
+    .controls { margin-top:12px }
+    label { display:block; margin-top:8px; font-weight:600; color:#0f172a }
+    input[type="number"] { width:160px; padding:6px 8px; border-radius:6px; border:1px solid #cbd5e1 }
+    table { width:100%; border-collapse:collapse; margin-top:12px }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #e6eef8 }
+    .note { font-size:13px; color:#475569 }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Gravity anomaly — Python 程式（HTML 版本）</h1>
+    <p class="lead">這個 HTML 檔案包含：說明文字、可複製的 Python 程式碼，以及建立檔案的按鈕，方便你把程式下載到本機執行。</p>
+  </header>
+
+  <div class="card">
+    <h2>說明</h2>
+    <p>程式會計算：</p>
+    <ul>
+      <li>理論重力（Somigliana）</li>
+      <li>Free-air correction（自由空氣改正）</li>
+      <li>Bouguer correction（布格改正）</li>
+      <li>Free-air anomaly（自由空氣異常）</li>
+      <li>Bouguer anomaly（布格異常）</li>
+    </ul>
+    <p class="note">使用的常數與公式：Somigliana 正常重力公式、FAC = 0.3086 mGal/m、BC = -0.04193 * rho * h（mGal）。預設岩石密度 rho = 2670 kg/m³、水密度 rho = 1030 kg/m³。</p>
+  </div>
+
+  <div class="card">
+    <h2>可複製的 Python 程式碼</h2>
+    <pre><code># gravity_anomaly_calculator.py
+import numpy as np
+
+# === 基本參數 ===
+latitude_deg = 48.1195
+elevation = 487.9       # m
+g_obs = 980717.39       # mGal
+
+rho_rock = 2670  # kg/m3
+rho_water = 1030 # kg/m3
+
+# === 函數：計算正常重力（Somigliana formula） ===
+def normal_gravity(latitude_deg):
+    lat = np.deg2rad(latitude_deg)
+    g_equator = 9.780327  # m/s2
+    k = 0.001931851353
+    e2 = 0.00669438002290
+    g = g_equator * (1 + k * np.sin(lat)**2) / np.sqrt(1 - e2 * np.sin(lat)**2)
+    return g * 1e5  # convert to mGal
+
+# === (a) 陸地上計算 ===
+g_theoretical = normal_gravity(latitude_deg)
+
+# Free-air correction (mGal)
+FAC = 0.3086 * elevation
+
+# Bouguer correction (mGal)
+BC = -0.04193 * rho_rock * elevation
+
+# Free-air anomaly
+FAA = g_obs + FAC - g_theoretical
+
+# Bouguer anomaly
+BA = g_obs + FAC + BC - g_theoretical
+
+# === (b) 海面上 (水深 = elevation) ===
+# 高程改為 0
+FAC_ocean = 0.3086 * 0  
+
+# 水層 Bouguer correction（注意符號）
+BC_water = -0.04193 * rho_water * elevation
+
+FAA_ocean = g_obs + FAC_ocean - g_theoretical
+BA_ocean = g_obs + FAC_ocean + BC_water - g_theoretical
+
+# === 印出結果 ===
+print("=== (a) 陸地上的結果 ===")
+print(f"Theoretical gravity: {g_theoretical:.2f} mGal")
+print(f"Free-air correction: {FAC:.2f} mGal")
+print(f"Bouguer correction: {BC:.2f} mGal")
+print(f"Free-air anomaly: {FAA:.2f} mGal")
+print(f"Bouguer anomaly: {BA:.2f} mGal")
+
+print("\n=== (b) 若站在海面上 (下方水深 = 487.9 m) ===")
+print(f"Free-air anomaly (ocean): {FAA_ocean:.2f} mGal")
+print(f"Bouguer anomaly (ocean): {BA_ocean:.2f} mGal")
+</code></pre>
+
+    <div class="controls">
+      <button id="downloadBtn" class="btn">下載 .py 程式檔</button>
+      <button id="copyBtn" class="btn" style="background:#2563eb; margin-left:8px">複製程式碼到剪貼簿</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>互動：修改參數並生成檔案</h2>
+    <label>Latitude (deg)
+      <input id="lat" type="number" step="0.0001" value="48.1195">
+    </label>
+    <label>Elevation (m)
+      <input id="elev" type="number" step="0.1" value="487.9">
+    </label>
+    <label>Observed gravity (mGal)
+      <input id="gobs" type="number" step="0.01" value="980717.39">
+    </label>
+    <label>Rock density (kg/m³)
+      <input id="rhor" type="number" step="1" value="2670">
+    </label>
+
+    <div style="margin-top:10px">
+      <button id="genBtn" class="btn">生成並下載含參數的 .py 檔</button>
+    </div>
+  </div>
+
+  <script>
+    const codeText = document.querySelector('pre code').innerText;
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(codeText);
+        alert('程式碼已複製到剪貼簿');
+      } catch (e) {
+        alert('無法複製：' + e);
+      }
+    });
+
+    function download(filename, text) {
+      const a = document.createElement('a');
+      const blob = new Blob([text], {type: 'text/plain'});
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      download('gravity_anomaly_calculator.py', codeText);
+    });
+
+    document.getElementById('genBtn').addEventListener('click', () => {
+      const lat = parseFloat(document.getElementById('lat').value);
+      const elev = parseFloat(document.getElementById('elev').value);
+      const gobs = parseFloat(document.getElementById('gobs').value);
+      const rhor = parseFloat(document.getElementById('rhor').value);
+
+      const header = `# gravity_anomaly_calculator.py\n# 自動產生：使用者參數\n`;
+      const body = codeText
+        .replace(/latitude_deg = .*\n/, `latitude_deg = ${lat}\n`)
+        .replace(/elevation = .*\n/, `elevation = ${elev}       # m\n`)
+        .replace(/g_obs = .*\n/, `g_obs = ${gobs}       # mGal\n`)
+        .replace(/rho_rock = .*\n/, `rho_rock = ${rhor} # kg/m3\n`);
+
+      download('gravity_anomaly_calculator_custom.py', header + body);
+    });
+  </script>
+
+  <footer style="margin-top:18px; color:#475569">若要我把此 HTML 檔包成 zip 或轉成可直接在瀏覽器執行的小應用（例如包含前端計算而非下載 Python），告訴我你的需求。</footer>
+</body>
+</html>
